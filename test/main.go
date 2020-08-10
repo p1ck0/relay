@@ -115,7 +115,6 @@ func main() {
 						var (
 							buffer = make([]byte, BUFF)
 							message string
-							pack PackageUDP
 							pack2 PackageServerUDP
 						)
 						length, err := udpconn.Read(buffer)
@@ -130,9 +129,13 @@ func main() {
 							continue
 						}
 						message += string(buffer[:length])
-						err = json.Unmarshal([]byte(message), &pack)
-						if err != nil {
-							json.Unmarshal([]byte(message), &pack2)
+						fmt.Println(message)
+						message += string(buffer[:length])
+						json.Unmarshal([]byte(message), &pack2)
+						if pack2.Status == true {
+							servers[pack2.TCPport] = pack2.Conns
+							fmt.Println(servers)
+						} else {
 							for name := range aconns {
 								pack2.Conns = append(pack2.Conns, name)
 							}
@@ -145,15 +148,7 @@ func main() {
 									fmt.Printf("Couldn't send response %v", err)
 								}
 							}(udpconn, remoteaddr, data)
-						} else {
-							pack.Status = true
-							data, _ := json.Marshal(pack)
-							go func(udpconn net.UDPConn, remoteaddr *net.UDPAddr, data []byte) {
-								_,err := udpconn.WriteToUDP(data, remoteaddr)
-								if err != nil {
-									fmt.Printf("Couldn't send response %v", err)
-								}
-							}(udpconn, remoteaddr, data)
+							fmt.Println(servers)
 						}
                     }
                 }(udpconn)
@@ -164,7 +159,7 @@ func main() {
 					go func(to string, msg PackageTCP){
 						conn, ok := aconns[to]
 						if !ok {
-							//connAnotherServer(to, msg)
+							connAnotherServer(to, msg)
 							return
 						}
 						data, err := json.Marshal(msg)
@@ -198,16 +193,21 @@ func main() {
 	}
 }
 
-func connectServer(servers []string) {
-	for _, conns := range servers {
+func connectServer(serverss []string) {
+	for _, conns := range serverss {
 		go func(conns string){
 			udpservadr,_ := net.ResolveUDPAddr("udp", conns)
 			var pack PackageServerUDP
 			data,_ := json.Marshal(pack)
 			udpconn,_ := net.DialUDP("udp", nil, udpservadr)
-			_,err := udpconn.WriteToUDP(data, udpservadr)
-			if err != nil {
-				fmt.Printf("Couldn't send response %v", err)
+			for len(servers) == 0 {
+				_,err := udpconn.WriteToUDP(data, udpservadr)
+				if err != nil {
+					fmt.Printf("Couldn't send response %v", err)
+				}
+			}
+			if len(servers) > 0 {
+				fmt.Println(servers)
 			}
 		}(conns)
 	}

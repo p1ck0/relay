@@ -8,7 +8,7 @@ import (
 )
 
 //ReciveConn - receive connection and reads the packets 
-func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconns map[net.Conn]string) {
+func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconns map[string]net.Conn) {
     rd := bufio.NewReader(conn)
 	fmt.Println(conn.RemoteAddr().String())
 	for {
@@ -25,7 +25,7 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 		message += string(buffer[:length])
 		err = json.Unmarshal([]byte(message), &pack)
 		if err != nil {
-			aconns[conn] = message
+			aconns[message] = conn
 		}
 		msgs <- pack
 				}
@@ -33,16 +33,19 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 }
 
 //RedirectPackages - redirects packets to recipient
-func RedirectPackages(msg PackageTCP, aconns map[net.Conn]string) {
-    for conn, name := range aconns {
-        for _, to := range msg.To{
-            if name == string(to) {
-                data, err := json.Marshal(msg)
-                if err != nil {
-                    panic(err)
-                }
-                conn.Write([]byte(data))
-            }
-        }
-    }
+func RedirectPackages(msg PackageTCP, aconns map[string]net.Conn) {
+	for _, to := range msg.To {
+		go func(to string, msg PackageTCP){
+			conn, ok := aconns[to]
+			if !ok {
+				//connAnotherServer(to, msg)
+				return
+			}
+			data, err := json.Marshal(msg)
+			if err != nil {
+				panic(err)
+			}
+			conn.Write([]byte(data))
+		}(to, msg)
+	}
 }

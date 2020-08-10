@@ -18,7 +18,7 @@ type PackageTCP struct {
 }
 
 var (
-	aconns  = make(map[net.Conn]string)
+	aconns  = make(map[string]net.Conn)
 	conns   = make(chan net.Conn)
 	dconns  = make(chan net.Conn)
 	servers = make(chan net.Conn)
@@ -49,9 +49,16 @@ func main() {
 
 		case msg := <-msgs:
 			go tcp.RedirectPackages(msg, aconns)
+
 		case dconn := <-dconns:
-			log.Printf("Client %v was gone\n", aconns[dconn])
-			delete(aconns, dconn)
+			defer dconn.Close()
+			for name, conn := range aconns {
+				if conn == dconn {
+					log.Printf("Client %v was gone\n", name)
+					dconn.Close()
+					delete(aconns, name)
+				}
+			}
 		}
 	}
 }

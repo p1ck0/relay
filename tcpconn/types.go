@@ -1,11 +1,12 @@
 package tcpconn
 
 //PackageTCP - tcp package for processing
-//From - who the package came from
-//To - to whom to send the package
-//Body - body package
-type PackageTCP struct {
+type PackageTCP struct{
+	Server bool
+	Servers []string
+	Conns []string
+	TCPport string
     From string
-    To   []string
-	Body interface{}
+    To []string
+    Body string
 }

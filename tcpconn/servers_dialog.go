@@ -1,12 +1,12 @@
 package tcpconn
 
 import (
-    "net"
-    "encoding/json"
+	"encoding/json"
+	"net"
 )
 
 //ConnectServer -  function for connections to other servers
-func ConnectServer(servers []string, myaddr string) {
+func ConnectServer(servers []string, myaddr string, aconns map[string]net.Conn, serverstcp map[string][]string) {
 	for _, serv := range servers {
 		go func(serv string) {
 			conn, err := net.Dial("tcp", serv)
@@ -14,7 +14,7 @@ func ConnectServer(servers []string, myaddr string) {
 				panic(err)
 			}
 			var pack = PackageTCP{
-				Server: true,
+				Server:  true,
 				TCPport: myaddr,
 			}
 			for names := range aconns {
@@ -33,13 +33,13 @@ func ConnectServer(servers []string, myaddr string) {
 }
 
 //ConnAnotherServer - function for messaging between servers
-func ConnAnotherServer(to string, msg PackageTCP) {
-	for ip, users := range servers {
-		for _, user:= range users{
+func ConnAnotherServer(to string, msg PackageTCP, serverstcp map[string][]string) {
+	for ip, users := range serverstcp {
+		for _, user := range users {
 			if user == to {
 				conn, _ := net.Dial("tcp", ip)
 				msg.To = []string{to}
-				data,_ := json.Marshal(msg)
+				data, _ := json.Marshal(msg)
 				conn.Write(data)
 				conn.Close()
 			}

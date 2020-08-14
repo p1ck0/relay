@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 )
 
 var (
@@ -22,6 +23,7 @@ var (
 	command     = make(chan string)
 	serversconn []string
 	port        string
+	servers     string
 )
 
 func init() {
@@ -34,6 +36,13 @@ func init() {
 				Usage:       "the port on which the server will run",
 				Aliases:     []string{"p"},
 				Destination: &port,
+			},
+			&cli.StringFlag{
+				Name:        "conn",
+				Value:       "",
+				Usage:       "the port on which the server will run",
+				Aliases:     []string{"c"},
+				Destination: &servers,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -57,6 +66,10 @@ func main() {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
+	if len(servers) > 0 {
+		serversArr := strings.Split(servers, " ")
+		tcp.ConnectServer(serversArr, addr, aconns, serverstcp)
+	}
 	defer ln.Close()
 	go func() {
 		for {
@@ -67,15 +80,22 @@ func main() {
 			tcpconns <- conn
 		}
 	}()
-
+	fmt.Println(`
+	______     ______     __         ______     __  __    
+	/\  == \   /\  ___\   /\ \       /\  __ \   /\ \_\ \   
+	\ \  __<   \ \  __\   \ \ \____  \ \  __ \  \ \____ \  
+	 \ \_\ \_\  \ \_____\  \ \_____\  \ \_\ \_\  \/\_____\ 
+	  \/_/ /_/   \/_____/   \/_____/   \/_/\/_/   \/_____/ 
+														   
+	`)
 	for {
 		select {
 		case conn := <-tcpconns:
 			fmt.Println(conn.RemoteAddr().String())
-			go tcp.ReciveConn(conn, msgs, dconns, aconns)
+			go tcp.ReciveConn(conn, msgs, dconns, aconns, serverstcp, addr)
 
 		case msg := <-msgs:
-			go tcp.RedirectPackages(msg, aconns)
+			go tcp.RedirectPackages(msg, aconns, serverstcp)
 
 		case dconn := <-dconns:
 			defer dconn.Close()

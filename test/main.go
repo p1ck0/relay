@@ -7,8 +7,9 @@ import (
 	"log"
 	"net"
 	"sort"
-	"strings"
-	"os"
+	"io"
+	//"strings"
+	//"os"
 )
 
 var BUFF = 1024
@@ -19,6 +20,10 @@ const (
 )
 
 type PackageTCP struct{
+	Server bool
+	Servers []string
+	Conns []string
+	TCPport string
     From string
     To []string
     Body string
@@ -28,11 +33,12 @@ type PackageUDP struct {
 	Status bool
 }
 
-
 type PackageServerUDP struct {
 	Status bool
 	TCPport string
 	Conns []string
+	MyConns []string
+	MyTCP string
 }
 
 var (
@@ -42,13 +48,7 @@ var (
 	servers = make(map[string][]string)
 	dconns = make(chan net.Conn)
 	msgs   = make(chan PackageTCP)
-	command = make(chan string)
 )
-
-func comms() {
-	com, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-	command <- com
-}
 
 
 func main() {
@@ -71,7 +71,7 @@ func main() {
 	go func() {
 		for {
 			//go comms()
-            udpconns <- *lnudp
+            //udpconns <- *lnudp
 			conn, err := ln.Accept()
 			if err != nil {
 				log.Fatalln(err.Error())
@@ -83,11 +83,8 @@ func main() {
 	for {
 		select {
 		case conn := <-tcpconns:
-			fmt.Println(conn.RemoteAddr().String())
-			
 			go func(conn net.Conn) {
 				rd := bufio.NewReader(conn)
-				fmt.Println(conn.RemoteAddr().String())
 				for {
 					var (
 						buffer = make([]byte, BUFF)
@@ -96,19 +93,28 @@ func main() {
 					)
                     length, err := rd.Read(buffer)
                     if err != nil { 
-						fmt.Println(err)
+						fmt.Println("ошибка на 100 строке",err)
 						break 
 					}
 					message += string(buffer[:length])
 					err  = json.Unmarshal([]byte(message), &pack)
-					if err != nil {
+					if err != nil && err != io.EOF {
 						aconns[message] = conn
+					} else if pack.Server == true {
+						servers[pack.TCPport] = pack.Conns
+						fmt.Println(servers)
+						server := []string{pack.TCPport}
+						index := sort.SearchStrings(pack.Servers, "127.0.0.1:8081")
+						if index == len(pack.Servers) {
+							connectServer(server)
+						}
+					} else {
+						msgs <- pack
 					}
-					msgs <- pack
                 }
 				dconns <- conn
             }(conn)
-
+/*
 			case udpconn := <-udpconns:
                 go func(udpconn net.UDPConn) {
                     for {
@@ -130,8 +136,10 @@ func main() {
 						}
 						message += string(buffer[:length])
 						fmt.Println(message)
-						message += string(buffer[:length])
-						json.Unmarshal([]byte(message), &pack2)
+						err = json.Unmarshal([]byte(message), &pack2)
+						if err != nil {
+							fmt.Println(err)
+						}
 						if pack2.Status == true {
 							servers[pack2.TCPport] = pack2.Conns
 							fmt.Println(servers)
@@ -148,17 +156,18 @@ func main() {
 									fmt.Printf("Couldn't send response %v", err)
 								}
 							}(udpconn, remoteaddr, data)
-							fmt.Println(servers)
+							servers[pack2.MyTCP] = pack2.MyConns
 						}
                     }
                 }(udpconn)
-
+*/
 			case msg := <-msgs:
 				fmt.Println(msg)
 				for _, to := range msg.To {
 					go func(to string, msg PackageTCP){
 						conn, ok := aconns[to]
 						if !ok {
+							fmt.Println(to)
 							connAnotherServer(to, msg)
 							return
 						}
@@ -170,14 +179,6 @@ func main() {
 					}(to, msg)
 				}
 				
-		case com := <-command:
-			splited := strings.Split(com, " ")
-			switch splited[0] {
-			case connect:
-				connectServer(splited[1:])
-//			case disconnect:
-//				disconnectServer(splited[1:])
-			}
 
 				
 		case dconn := <-dconns:
@@ -194,36 +195,48 @@ func main() {
 }
 
 func connectServer(serverss []string) {
-	for _, conns := range serverss {
-		go func(conns string){
-			udpservadr,_ := net.ResolveUDPAddr("udp", conns)
-			var pack PackageServerUDP
-			data,_ := json.Marshal(pack)
-			udpconn,_ := net.DialUDP("udp", nil, udpservadr)
-			for len(servers) == 0 {
-				_,err := udpconn.WriteToUDP(data, udpservadr)
-				if err != nil {
-					fmt.Printf("Couldn't send response %v", err)
-				}
+	myaddr := "127.0.0.1:8081"
+	for _, serv := range serverss {
+		go func(serv string) {
+			conn, err := net.Dial("tcp", serv)
+			if err != nil {
+				panic(err)
 			}
-			if len(servers) > 0 {
-				fmt.Println(servers)
+			var pack = PackageTCP{
+				Server: true,
+				TCPport: myaddr,
 			}
-		}(conns)
+			for names := range aconns {
+				pack.Conns = append(pack.Conns, names)
+			}
+			for ip := range servers {
+				pack.Servers = append(pack.Servers, ip)
+			}
+			data, _ := json.Marshal(pack)
+			_, err = conn.Write(data)
+			if err != nil {
+				panic(err)
+			}
+		}(serv)
 	}
 }
 
-func connAnotherServer(name string, msg PackageTCP) {
-	for ip, user := range servers {
-		index := sort.SearchStrings(user, name)
-		if index != len(user) {
-			conn, _ := net.Dial("tcp", ip)
-			defer conn.Close()
-			data,_ := json.Marshal(msg)
-			conn.Write(data)
+func connAnotherServer(to string, msg PackageTCP) {
+	for ip, users := range servers {
+		for _, user:= range users{
+			if user == to {
+				conn, _ := net.Dial("tcp", ip)
+				msg.To = []string{to}
+				data,_ := json.Marshal(msg)
+				conn.Write(data)
+				conn.Close()
+			}
 		}
 	}
 }
+
+
+
 
 
 

@@ -6,27 +6,56 @@ import (
 	"fmt"
 	"log"
 	"net"
-	tcp "./tcpconn"
+	tcp "github.com/p1ck0/relay/tcpconn"
+	"github.com/urfave/cli/v2"
+	"os"
 )
 
 var BUFF = 1024
 
-type PackageTCP struct {
-	From string
-	To   []string
-	Body interface{}
-}
-
 var (
-	aconns  = make(map[string]net.Conn)
-	conns   = make(chan net.Conn)
-	dconns  = make(chan net.Conn)
-	servers = make(chan net.Conn)
-	msgs    = make(chan tcp.PackageTCP)
+	aconns = make(map[string]net.Conn)
+    tcpconns  = make(chan net.Conn)
+	udpconns = make(chan net.UDPConn)
+	serverstcp = make(map[string][]string)
+	dconns = make(chan net.Conn)
+	msgs   = make(chan tcp.PackageTCP)
+	command = make(chan string)
+	serversconn []string
+	port string
 )
 
+func init() {
+	port = "8888"
+	app := &cli.App{
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name: "port",
+				Value: "8888",
+				Usage: "the port on which the server will run",
+				Aliases: []string{"p"},
+				Destination: &port,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			if len(port) > 0 {
+				fmt.Println("use port", port)
+			} else {
+				fmt.Println("use port", port)
+			}
+			return nil
+		},
+	}
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
-	ln, err := net.Listen("tcp", "127.0.0.1:8081")
+	adrr := "127.0.0.1:" + port
+	fmt.Println(adrr)
+	ln, err := net.Listen("tcp", adrr)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -37,13 +66,13 @@ func main() {
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
-			conns <- conn
+			tcpconns <- conn
 		}
 	}()
 
 	for {
 		select {
-		case conn := <-conns:
+		case conn := <-tcpconns:
 			fmt.Println(conn.RemoteAddr().String())
 			go tcp.ReciveConn(conn, msgs, dconns, aconns)
 
@@ -61,11 +90,4 @@ func main() {
 			}
 		}
 	}
-}
-
-func connServer(ipServ string) {
-	conn, _ := net.Dial("udp", ipServ)
-	ls, _ := net.Listen("udp", "127.0.0.1:8082")
-	conn, _ = ls.Accept()
-	servers <- conn
 }

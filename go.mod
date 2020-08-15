@@ -2,4 +2,7 @@ module github.com/p1ck0/relay
 
 go 1.14
 
-require github.com/urfave/cli/v2 v2.2.0
+require (
+	github.com/fatih/color v1.9.0
+	github.com/urfave/cli/v2 v2.2.0
+)

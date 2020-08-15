@@ -13,6 +13,7 @@ func ConnectServer(servers []string, myaddr string, aconns map[string]net.Conn, 
 			if err != nil {
 				panic(err)
 			}
+			defer conn.Close()
 			var pack = PackageTCP{
 				Server:  true,
 				TCPport: myaddr,
@@ -44,5 +45,18 @@ func ConnAnotherServer(to string, msg PackageTCP, serverstcp map[string][]string
 				conn.Close()
 			}
 		}
+	}
+}
+
+//NewUser - function for registering users on all servers
+func NewUser(user string, addr string, serverstcp map[string][]string) {
+	var pack PackageTCP 
+	pack.From = addr
+	pack.User = user
+	data, _ := json.Marshal(pack)
+	for ip := range serverstcp {
+		conn, _ := net.Dial("tcp", ip)
+		conn.Write(data)
+		conn.Close()
 	}
 }

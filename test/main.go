@@ -20,6 +20,7 @@ const (
 )
 
 type PackageTCP struct{
+	User string
 	Server bool
 	Servers []string
 	Conns []string
@@ -52,6 +53,7 @@ var (
 
 
 func main() {
+	addr := "127.0.0.1:8081"
 	ln, err := net.Listen("tcp", "127.0.0.1:8081")
 	if err != nil {
 		log.Fatalln(err.Error())
@@ -100,6 +102,10 @@ func main() {
 					err  = json.Unmarshal([]byte(message), &pack)
 					if err != nil && err != io.EOF {
 						aconns[message] = conn
+						fmt.Println(aconns)
+						if len(servers) > 0 {
+							newUser(message, addr)
+						}
 					} else if pack.Server == true {
 						servers[pack.TCPport] = pack.Conns
 						fmt.Println(servers)
@@ -108,6 +114,8 @@ func main() {
 						if index == len(pack.Servers) {
 							connectServer(server)
 						}
+					} else if len(pack.User) > 0 {
+						servers[pack.From] = append(servers[pack.From], pack.User)
 					} else {
 						msgs <- pack
 					}
@@ -232,6 +240,19 @@ func connAnotherServer(to string, msg PackageTCP) {
 				conn.Close()
 			}
 		}
+	}
+}
+
+func newUser(user string, addr string) {
+	var pack PackageTCP 
+	pack.From = addr
+	pack.User = user
+	fmt.Println(pack)
+	data, _ := json.Marshal(pack)
+	for ip := range servers {
+		conn, _ := net.Dial("tcp", ip)
+		conn.Write(data)
+		conn.Close()
 	}
 }
 

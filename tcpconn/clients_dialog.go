@@ -25,6 +25,9 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 		err = json.Unmarshal([]byte(message), &pack)
 		if err != nil {
 			aconns[message] = conn
+			if len(serverstcp) > 0 {
+				NewUser(message, addr, serverstcp)
+			}
 		} else if pack.Server == true {
 			serverstcp[pack.TCPport] = pack.Conns
 			fmt.Println(serverstcp)
@@ -34,6 +37,10 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 				ConnectServer(server, addr, aconns, serverstcp)
 				fmt.Println(serverstcp)
 			}
+		
+		} else if len(pack.User) > 0 {
+			serverstcp[pack.From] = append(serverstcp[pack.From], pack.User)
+		
 		} else {
 			msgs <- pack
 		}

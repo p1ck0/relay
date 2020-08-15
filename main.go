@@ -1,11 +1,10 @@
 package main
 
 import (
-	//"bufio"
-	//"encoding/json"
 	"fmt"
 	tcp "github.com/p1ck0/relay/tcpconn"
 	"github.com/urfave/cli/v2"
+	"github.com/fatih/color"
 	"log"
 	"net"
 	"os"
@@ -27,6 +26,19 @@ var (
 )
 
 func init() {
+	color.Cyan(`
+#######################################
+
+
+   _____      __    __  __
+  / ___/___  / /___ \ \/ /
+  \__ \/ _ \/ / __ '/\  / 
+ ___/ /  __/ / /_/ / / /  
+/____/\___/_/\__,_/ /_/ 
+	  
+
+######################################
+	  `)
 	port = "8888"
 	app := &cli.App{
 		Flags: []cli.Flag{
@@ -47,9 +59,9 @@ func init() {
 		},
 		Action: func(c *cli.Context) error {
 			if len(port) > 0 {
-				fmt.Println("use port", port)
+				color.Green("*** uses port " + port + " ***")
 			} else {
-				fmt.Println("use port", port)
+				color.Green("*** uses port " + port + " ***")
 			}
 			return nil
 		},
@@ -80,14 +92,6 @@ func main() {
 			tcpconns <- conn
 		}
 	}()
-	fmt.Println(`
-	______     ______     __         ______     __  __    
-	/\  == \   /\  ___\   /\ \       /\  __ \   /\ \_\ \   
-	\ \  __<   \ \  __\   \ \ \____  \ \  __ \  \ \____ \  
-	 \ \_\ \_\  \ \_____\  \ \_____\  \ \_\ \_\  \/\_____\ 
-	  \/_/ /_/   \/_____/   \/_____/   \/_/\/_/   \/_____/ 
-														   
-	`)
 	for {
 		select {
 		case conn := <-tcpconns:

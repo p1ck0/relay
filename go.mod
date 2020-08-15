@@ -1,4 +1,4 @@
-module github.com/p1ck0/relay
+module github.com/p1ck0/selay
 
 go 1.14
 

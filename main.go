@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	col := color.New(color.FgHiCyan).Add(color.Underline).Add(color.Bold)
+	col := color.New(color.FgHiCyan).Add(color.Bold)
 	col.Println(`
 .......................................................
 . . . .  .   . .   . . .. . . .      . .  . . . .   . .

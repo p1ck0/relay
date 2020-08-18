@@ -6,7 +6,9 @@ var buff = 1024
 type PackageTCP struct {
     User    string
 	Server  bool
-	Servers []string
+	DelUser bool
+	NewUser bool
+	Servers map[string]bool
 	Conns   []string
 	TCPport string
 	From    string

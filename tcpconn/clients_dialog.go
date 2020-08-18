@@ -5,11 +5,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"net"
-	"sort"
 )
 
 //ReciveConn - receive connection and reads the packets
-func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconns map[string]net.Conn, serverstcp map[string][]string, addr string) {
+func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconns map[string]net.Conn, serverstcp map[string]string, addr string) {
 	rd := bufio.NewReader(conn)
 	for {
 		var (
@@ -28,20 +27,27 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 			if len(serverstcp) > 0 {
 				NewUser(message, addr, serverstcp)
 			}
-		} else if pack.Server == true {
-			serverstcp[pack.TCPport] = pack.Conns
+		}
+		switch {
+		case pack.Server:
+			if len(pack.Conns) > 0 {
+				for _, conn := range pack.Conns {
+					serverstcp[conn] = pack.TCPport
+				}
+			} else {
+				serverstcp[""] = pack.TCPport
+			}
 			fmt.Println(serverstcp)
 			server := []string{pack.TCPport}
-			index := sort.SearchStrings(pack.Servers, addr)
-			if index == len(pack.Servers) {
+			if _,ok := pack.Servers[addr];!ok {
 				ConnectServer(server, addr, aconns, serverstcp)
 				fmt.Println(serverstcp)
 			}
-		
-		} else if len(pack.User) > 0 {
-			serverstcp[pack.From] = append(serverstcp[pack.From], pack.User)
-		
-		} else {
+		case pack.NewUser:
+			serverstcp[pack.User] = pack.From
+		case pack.DelUser:
+			delete(serverstcp, pack.User)
+		default:
 			msgs <- pack
 		}
 	}
@@ -49,7 +55,7 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 }
 
 //RedirectPackages - redirects packets to recipient
-func RedirectPackages(msg PackageTCP, aconns map[string]net.Conn, serverstcp map[string][]string) {
+func RedirectPackages(msg PackageTCP, aconns map[string]net.Conn, serverstcp map[string]string) {
 	for _, to := range msg.To {
 		go func(to string, msg PackageTCP) {
 			conn, ok := aconns[to]

@@ -15,15 +15,19 @@ func ConnectServer(servers []string, myaddr string, aconns map[string]net.Conn, 
 			}
 			defer conn.Close()
 			var pack = PackageTCP{
-				Server:  true,
-				TCPport: myaddr,
+				Head : Head {
+					ServerInfo : Server {
+						Server:  true,
+						TCPport: myaddr,
+					},
+				},
 			}
 			for names := range aconns {
-				pack.Conns = append(pack.Conns, names)
+				pack.Head.ServerInfo.Conns = append(pack.Head.ServerInfo.Conns, names)
 			}
-			pack.Servers = make(map[string]bool)
+			pack.Head.ServerInfo.Servers = make(map[string]bool)
 			for _,ip := range serverstcp {
-				pack.Servers[ip] = false
+				pack.Head.ServerInfo.Servers[ip] = false
 			}
 			data, _ := json.Marshal(pack)
 			_, err = conn.Write(data)
@@ -38,7 +42,7 @@ func ConnectServer(servers []string, myaddr string, aconns map[string]net.Conn, 
 func ConnAnotherServer(to string, msg PackageTCP, serverstcp map[string]string) {
 	if ip,ok := serverstcp[to];ok{
 		conn, _ := net.Dial("tcp", ip)
-		msg.To = []string{to}
+		msg.Head.To = []string{to}
 		data, _ := json.Marshal(msg)
 		conn.Write(data)
 		conn.Close()
@@ -46,11 +50,15 @@ func ConnAnotherServer(to string, msg PackageTCP, serverstcp map[string]string) 
 }
 
 //NewUser - function for registering users on all servers
-func NewUser(user string, addr string, serverstcp map[string]string) {
+func NewUser(user PackageTCP, addr string, serverstcp map[string]string) {
 	var pack = PackageTCP{
-		NewUser : true,
-		From : addr,
-		User : user,
+		Head : Head{
+			From : addr,
+			UserMod : User{
+				NewUser : true,
+				User : user.Head.UserMod.User,
+			},
+		},
 	}
 	data, _ := json.Marshal(pack)
 	for _,ip := range serverstcp {
@@ -63,8 +71,12 @@ func NewUser(user string, addr string, serverstcp map[string]string) {
 //DelUser - function for deleting users on all servers
 func DelUser(user string, addr string, serverstcp map[string]string) {
 	var pack = PackageTCP{
-		DelUser : true,
-		User : user,
+		Head : Head {
+			UserMod : User{
+				DelUser : true,
+				User : user,
+			},
+		},
 	}
 	data, _ := json.Marshal(pack)
 	for _,ip := range serverstcp {

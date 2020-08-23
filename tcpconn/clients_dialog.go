@@ -23,30 +23,33 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 		message += string(buffer[:length])
 		err = json.Unmarshal([]byte(message), &pack)
 		if err != nil {
-			aconns[message] = conn
-			if len(serverstcp) > 0 {
-				NewUser(message, addr, serverstcp)
-			}
+			fmt.Println(err)
 		}
 		switch {
-		case pack.Server:
-			if len(pack.Conns) > 0 {
-				for _, conn := range pack.Conns {
-					serverstcp[conn] = pack.TCPport
+		case pack.Head.UserMod.RegUser:
+			aconns[pack.Head.UserMod.User] = conn
+			if len(serverstcp) > 0 {
+				NewUser(pack, addr, serverstcp)
+			} 
+		case pack.Head.ServerInfo.Server:
+			if len(pack.Head.ServerInfo.Conns) > 0 {
+				for _, conn := range pack.Head.ServerInfo.Conns {
+					serverstcp[conn] = pack.Head.ServerInfo.TCPport
 				}
 			} else {
-				serverstcp[""] = pack.TCPport
+				serverstcp[""] = pack.Head.ServerInfo.TCPport
 			}
 			fmt.Println(serverstcp)
-			server := []string{pack.TCPport}
-			if _,ok := pack.Servers[addr];!ok {
+			server := []string{pack.Head.ServerInfo.TCPport}
+			if _,ok := pack.Head.ServerInfo.Servers[addr];!ok {
 				ConnectServer(server, addr, aconns, serverstcp)
 				fmt.Println(serverstcp)
 			}
-		case pack.NewUser:
-			serverstcp[pack.User] = pack.From
-		case pack.DelUser:
-			delete(serverstcp, pack.User)
+		case pack.Head.UserMod.NewUser:
+			fmt.Println(pack.Head.UserMod.User)
+			serverstcp[pack.Head.UserMod.User] = pack.Head.From
+		case pack.Head.UserMod.DelUser:
+			delete(serverstcp, pack.Head.UserMod.User)
 		default:
 			msgs <- pack
 		}
@@ -56,7 +59,7 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 
 //RedirectPackages - redirects packets to recipient
 func RedirectPackages(msg PackageTCP, aconns map[string]net.Conn, serverstcp map[string]string) {
-	for _, to := range msg.To {
+	for _, to := range msg.Head.To {
 		go func(to string, msg PackageTCP) {
 			conn, ok := aconns[to]
 			if !ok {

@@ -62,13 +62,8 @@ func init() {
 		},
 		Action: func(c *cli.Context) error {
 			colorgrenn := color.New(color.FgBlack).Add(color.BgHiCyan)
-			if len(port) > 0 {
-				colorgrenn.Printf("*:*:*& USES PORT " + port + " &*:*:*")
-				fmt.Printf("\n")
-			} else {
-				colorgrenn.Printf("*:*:*& USES PORT " + port + " &*:*:*")
-				fmt.Printf("\n")
-			}
+			colorgrenn.Printf("*:*:*& USES PORT " + port + " &*:*:*")
+			fmt.Printf("\n")
 			return nil
 		},
 	}

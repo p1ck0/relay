@@ -18,10 +18,34 @@ var (
 	buffer = make([]byte, BUFF)
 )
 
+//PackageTCP - tcp package for processing
 type PackageTCP struct {
+	Head 	Head
+	Body    interface{}
+}
+
+//Head - struct for PackageTCP
+type Head struct {
 	From string
-	To   []string
-	Body string
+	To []string
+	UserMod User
+	ServerInfo Server
+}
+
+//User - struct for PackageTCP
+type User struct {
+	RegUser bool
+	DelUser bool
+	NewUser bool
+	User string
+}
+
+//Server - struct for PackageTCP
+type Server struct {
+	Servers map[string]bool
+	Conns []string
+	TCPport string
+	Server bool
 }
 
 func main() {
@@ -32,7 +56,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	servAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8081")
+	servAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:1488")
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +64,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	conn.Write([]byte("vasya"))
+	var pack = PackageTCP{
+		Head: Head{
+			UserMod : User{
+				RegUser : true,
+				User : "vasya",
+			},
+		},
+	}
+	data, _ := json.Marshal(pack)
+	_, err = conn.Write(data)
+	if err != nil {
+		panic(err)
+	}
 	go Read(conn)
 	go Write(conn)
 
@@ -58,7 +94,7 @@ func Read(conn net.Conn) {
 			return
 		}
 		json.Unmarshal(buffer[:len], &recPack)
-		fmt.Println(recPack.From, ":", recPack.Body)
+		fmt.Println(recPack.Head.From, ":", recPack.Body)
 	}
 }
 
@@ -70,9 +106,11 @@ func Write(conn net.Conn) {
 		message, _ := reader.ReadString('\n')
 		message = strings.ReplaceAll(message, "\n", "")
 		var pack = PackageTCP{
-			From: myaddr,
-			To:   anotheraddr,
-			Body: message,
+			Head : Head {
+				From: myaddr,
+				To:   anotheraddr,
+			},
+			Body : message,
 		}
 		data, _ := json.Marshal(pack)
 		_, err := conn.Write(data)

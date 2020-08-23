@@ -25,7 +25,7 @@ var (
 
 func init() {
 	port = "8888"
-	cli.CliApp(port, servers)
+	cli.App(&port, &servers)
 }
 
 func main() {

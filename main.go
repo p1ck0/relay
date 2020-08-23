@@ -16,7 +16,7 @@ var (
 	aconns      = make(map[string]net.Conn)
 	tcpconns    = make(chan net.Conn)
 	udpconns    = make(chan net.UDPConn)
-	serverstcp  = make(map[string][]string)
+	serverstcp  = make(map[string]string)
 	dconns      = make(chan net.Conn)
 	msgs        = make(chan tcp.PackageTCP)
 	command     = make(chan string)
@@ -40,7 +40,7 @@ func init() {
  ########  ########## ########## ###     ###    ###  
  # # # #   #  #  #  #      #   #  #       #     #  #
   #  #   #  #    # #  #  #   #    #    # #   #   #  
-#####################################################
+######################################################
 	  `)
 	port = "8888"
 	app := &cli.App{
@@ -63,9 +63,11 @@ func init() {
 		Action: func(c *cli.Context) error {
 			colorgrenn := color.New(color.FgBlack).Add(color.BgHiCyan)
 			if len(port) > 0 {
-				colorgrenn.Println("*:*:*& USES PORT " + port + " &*:*:*")
+				colorgrenn.Printf("*:*:*& USES PORT " + port + " &*:*:*")
+				fmt.Printf("\n")
 			} else {
-				colorgrenn.Println("*:*:*& USES PORT " + port + " &*:*:*")
+				colorgrenn.Printf("*:*:*& USES PORT " + port + " &*:*:*")
+				fmt.Printf("\n")
 			}
 			return nil
 		},
@@ -112,6 +114,7 @@ func main() {
 					log.Printf("Client %v was gone\n", name)
 					dconn.Close()
 					delete(aconns, name)
+					tcp.DelUser(name, addr, serverstcp)
 				}
 			}
 		}

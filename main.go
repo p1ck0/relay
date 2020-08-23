@@ -100,7 +100,7 @@ func main() {
 			go tcp.ReciveConn(conn, msgs, dconns, aconns, serverstcp, addr)
 
 		case msg := <-msgs:
-			go tcp.RedirectPackages(msg, aconns, serverstcp)
+			go tcp.RedirectPackages(&msg, aconns, serverstcp)
 
 		case dconn := <-dconns:
 			defer dconn.Close()

@@ -14,7 +14,7 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 		var (
 			buffer  = make([]byte, buff)
 			message string
-			pack    PackageTCP
+			pack    *PackageTCP
 		)
 		length, err := rd.Read(buffer)
 		if err != nil {
@@ -37,21 +37,21 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 		case pack.Head.UserMod.DelUser:
 			delete(serverstcp, pack.Head.UserMod.User)
 		default:
-			msgs <- pack
+			msgs <- *pack
 		}
 	}
 	dconns <- conn
 }
 
 //RedirectPackages - redirects packets to recipient
-func RedirectPackages(msg PackageTCP, aconns map[string]net.Conn, serverstcp map[string]string) {
+func RedirectPackages(msg *PackageTCP, aconns map[string]net.Conn, serverstcp map[string]string) {
 	for _, to := range msg.Head.To {
 		go func(to string, msg PackageTCP) {
 			mut.Lock()
 			conn, ok := aconns[to]
 			mut.Unlock()
 			if !ok {
-				ConnAnotherServer(to, msg, serverstcp)
+				ConnAnotherServer(to, &msg, serverstcp)
 				return
 			}
 			data, err := json.Marshal(msg)
@@ -59,12 +59,12 @@ func RedirectPackages(msg PackageTCP, aconns map[string]net.Conn, serverstcp map
 				panic(err)
 			}
 			conn.Write([]byte(data))
-		}(to, msg)
+		}(to, *msg)
 	}
 }
 
 //RegistUser - registers a new client
-func RegistUser(aconns map[string]net.Conn, pack PackageTCP, conn net.Conn, serverstcp map[string]string, addr string) {
+func RegistUser(aconns map[string]net.Conn, pack *PackageTCP, conn net.Conn, serverstcp map[string]string, addr string) {
 	mut.Lock()
 	aconns[pack.Head.UserMod.User] = conn
 	mut.Unlock()
@@ -74,7 +74,7 @@ func RegistUser(aconns map[string]net.Conn, pack PackageTCP, conn net.Conn, serv
 }
 
 //RegistServer - registers a new server
-func RegistServer(aconns map[string]net.Conn, pack PackageTCP, conn net.Conn, serverstcp map[string]string, addr string) {
+func RegistServer(aconns map[string]net.Conn, pack *PackageTCP, conn net.Conn, serverstcp map[string]string, addr string) {
 	mut.Lock()
 	if len(pack.Head.ServerInfo.Conns) > 0 {
 		for _, conn := range pack.Head.ServerInfo.Conns {

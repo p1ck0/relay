@@ -56,7 +56,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	servAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:1488")
+	servAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8888")
 	if err != nil {
 		panic(err)
 	}

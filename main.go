@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/fatih/color"
 	tcp "github.com/p1ck0/selay/tcpconn"
-	"github.com/urfave/cli/v2"
+	"github.com/p1ck0/selay/cli"
 	"log"
 	"net"
-	"os"
 	"strings"
 )
 
@@ -26,51 +24,8 @@ var (
 )
 
 func init() {
-	col := color.New(color.FgHiCyan).Add(color.Bold)
-	col.Println(`
-.......................................................
-. . . .  .   . .   . . .. . . .      . .  . . . .   . .
- .  .  . . .  . . . .  .               .  . .  . .  . 
- ::::::::  :::::::::: :::            :::     :::   ::: 
-:+:    :+: :+:        :+:          :+: :+:   :+:   :+: 
-+:+        +:+        +:+         +:+   +:+   +:+ +:+  
-+#++:++#++ +#++:++#   +#+        +#++:++#++:   +#++:   
-       +#+ +#+        +#+        +#+     +#+    +#+    
-#+#    #+# #+#        #+#        #+#     #+#    #+#    
- ########  ########## ########## ###     ###    ###  
- # # # #   #  #  #  #      #   #  #       #     #  #
-  #  #   #  #    # #  #  #   #    #    # #   #   #  
-######################################################
-	  `)
 	port = "8888"
-	app := &cli.App{
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "port",
-				Value:       "8888",
-				Usage:       "the port on which the server will run",
-				Aliases:     []string{"p"},
-				Destination: &port,
-			},
-			&cli.StringFlag{
-				Name:        "conn",
-				Value:       "",
-				Usage:       "the port on which the server will run",
-				Aliases:     []string{"c"},
-				Destination: &servers,
-			},
-		},
-		Action: func(c *cli.Context) error {
-			colorgrenn := color.New(color.FgBlack).Add(color.BgHiCyan)
-			colorgrenn.Printf("*:*:*& USES PORT " + port + " &*:*:*")
-			fmt.Printf("\n")
-			return nil
-		},
-	}
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
-	}
+	cli.CliApp(port, servers)
 }
 
 func main() {

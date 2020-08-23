@@ -15,8 +15,8 @@ func ConnectServer(servers []string, myaddr string, aconns map[string]net.Conn, 
 			}
 			defer conn.Close()
 			var pack = &PackageTCP{
-				Head: Head{
-					ServerInfo: Server{
+				Head: &Head{
+					ServerInfo: &Server{
 						Server:  true,
 						TCPport: myaddr,
 					},
@@ -52,9 +52,9 @@ func ConnAnotherServer(to string, msg *PackageTCP, serverstcp map[string]string)
 //NewUser - function for registering users on all servers
 func NewUser(user *PackageTCP, addr string, serverstcp map[string]string) {
 	var pack = &PackageTCP{
-		Head: Head{
+		Head: &Head{
 			From: addr,
-			UserMod: User{
+			UserMod: &User{
 				NewUser: true,
 				User:    user.Head.UserMod.User,
 			},
@@ -71,8 +71,8 @@ func NewUser(user *PackageTCP, addr string, serverstcp map[string]string) {
 //DelUser - function for deleting users on all servers
 func DelUser(user string, addr string, serverstcp map[string]string) {
 	var pack = &PackageTCP{
-		Head: Head{
-			UserMod: User{
+		Head: &Head{
+			UserMod: &User{
 				DelUser: true,
 				User:    user,
 			},

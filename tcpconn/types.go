@@ -8,7 +8,7 @@ var mut sync.Mutex
 
 //PackageTCP - tcp package for processing
 type PackageTCP struct {
-	Head Head
+	Head *Head
 	Body interface{}
 }
 
@@ -16,8 +16,8 @@ type PackageTCP struct {
 type Head struct {
 	From       string
 	To         []string
-	UserMod    User
-	ServerInfo Server
+	UserMod    *User
+	ServerInfo *Server
 }
 
 //User - struct for PackageTCP

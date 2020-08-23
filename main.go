@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	tcp "github.com/p1ck0/selay/tcpconn"
 	"github.com/urfave/cli/v2"
-	"github.com/fatih/color"
 	"log"
 	"net"
 	"os"

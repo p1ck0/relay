@@ -14,7 +14,7 @@ func ReciveConn(conn net.Conn, msgs chan PackageTCP, dconns chan net.Conn, aconn
 		var (
 			buffer  = make([]byte, buff)
 			message string
-			pack    *PackageTCP
+			pack    = &PackageTCP{}
 		)
 		length, err := rd.Read(buffer)
 		if err != nil {

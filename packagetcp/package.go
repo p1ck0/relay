@@ -1,14 +1,8 @@
-package tcpconn
-
-import "sync"
-
-var buff = 1024
-
-var mut sync.Mutex
+package packagetcp
 
 //PackageTCP - tcp package for processing
 type PackageTCP struct {
-	Head *Head
+	Head Head
 	Body interface{}
 }
 
@@ -16,8 +10,8 @@ type PackageTCP struct {
 type Head struct {
 	From       string
 	To         []string
-	UserMod    *User
-	ServerInfo *Server
+	UserMod    User
+	ServerInfo Server
 }
 
 //User - struct for PackageTCP

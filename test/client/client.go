@@ -1,83 +1,33 @@
 package main
 
-import (
-	"bufio"
-	"encoding/json"
-	"fmt"
-	"net"
-	"os"
-	"strings"
-	"sync"
-)
+import "fmt"
 
-var (
-	BUFF = 1024
+func squares(c chan int) {
+    for i := 0; i <= 9; i++ {
+        c <- i * i
+    }
 
-	wg sync.WaitGroup
-
-	buffer = make([]byte, BUFF)
-)
-
-type PackageTCP struct {
-	From string
-	To   []string
-	Body string
+	close(c) // close channel
 }
 
 func main() {
-	wg.Add(1)
-	myaddr := "127.0.0.1:6667"
+    fmt.Println("main() started")
+    c := make(chan int, 11)
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", myaddr)
-	if err != nil {
-		panic(err)
-	}
-	servAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8081")
-	if err != nil {
-		panic(err)
-	}
-	conn, err := net.DialTCP("tcp", tcpAddr, servAddr)
-	if err != nil {
-		panic(err)
-	}
-	conn.Write([]byte("vasya"))
-	go Read(conn)
-	go Write(conn)
+    go squares(c) // start goroutine
 
-	wg.Wait()
-
-}
-
-func Read(conn net.Conn) {
-	var recPack PackageTCP
-	for {
-		len, err := conn.Read(buffer)
-		if err != nil {
-			fmt.Printf("dissconect")
-			wg.Done()
-			return
-		}
-		json.Unmarshal(buffer[:len], &recPack)
-		fmt.Println(recPack.From, ":", recPack.Body)
+	// periodic block/unblock of main goroutine until chanel closes
+    for {
+        val, ok := <-c
+        if ok == false {
+            fmt.Println(val, ok, "<-- loop broke!")
+            break // exit break loop
+        } else {
+			fmt.Println(val, ok)
+			fmt.Println("len:",len(c))
+        }
 	}
-}
+	fmt.Println(len(c))
 
-func Write(conn net.Conn) {
-	myaddr := "vasya"
-	anotheraddr := []string{"petya","nik"}
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		message, _ := reader.ReadString('\n')
-		message = strings.ReplaceAll(message, "\n", "")
-		var pack = PackageTCP{
-			From: myaddr,
-			To:   anotheraddr,
-			Body: message,
-		}
-		data, _ := json.Marshal(pack)
-		_, err := conn.Write(data)
-		if err != nil {
-			panic(err)
-		}
-	}
+    fmt.Println("main() stopped")
 }

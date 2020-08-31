@@ -9,8 +9,8 @@ import (
 )
 
 //ReciveConn - receive connection and reads the packets
-func (serv *Server) ReciveConn(conn net.Conn) {
-	rd := bufio.NewReader(conn)
+func (serv *Server) ReciveConn(conn *net.Conn) {
+	rd := bufio.NewReader(*conn)
 	for {
 		var (
 			buffer  = make([]byte, serv.Buff)
@@ -42,7 +42,7 @@ func (serv *Server) ReciveConn(conn net.Conn) {
 			serv.Msgs <- pack
 		}
 	}
-	serv.Dconns <- conn
+	serv.Dconns <- *conn
 }
 
 //RedirectPackages - redirects packets to recipient
@@ -66,9 +66,9 @@ func (serv *Server) RedirectPackages(msg *pack.PackageTCP) {
 }
 
 //RegistUser - registers a new client
-func (serv *Server) RegistUser(pack *pack.PackageTCP, conn net.Conn) {
+func (serv *Server) RegistUser(pack *pack.PackageTCP, conn *net.Conn) {
 	mut.Lock()
-	serv.Aconns[pack.Head.UserMod.User] = conn
+	serv.Aconns[pack.Head.UserMod.User] = *conn
 	mut.Unlock()
 	if len(serv.ServersTCP) > 0 {
 		serv.NewUser(pack)
@@ -76,7 +76,7 @@ func (serv *Server) RegistUser(pack *pack.PackageTCP, conn net.Conn) {
 }
 
 //RegistServer - registers a new server
-func (serv *Server) RegistServer(pack *pack.PackageTCP, conn net.Conn) {
+func (serv *Server) RegistServer(pack *pack.PackageTCP, conn *net.Conn) {
 	mut.Lock()
 	if len(pack.Head.ServerInfo.Conns) > 0 {
 		for _, conn := range pack.Head.ServerInfo.Conns {

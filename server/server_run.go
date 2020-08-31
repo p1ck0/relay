@@ -26,10 +26,10 @@ type Server struct {
 //Run - starts the server
 func (serv *Server) Run() {
 	serv.Aconns = make(map[string]net.Conn)
-	serv.TCPconns = make(chan net.Conn)
+	serv.TCPconns = make(chan net.Conn, 1)
 	serv.ServersTCP = make(map[string]string)
-	serv.Dconns = make(chan net.Conn)
-	serv.Msgs = make(chan *pack.PackageTCP)
+	serv.Dconns = make(chan net.Conn, 1)
+	serv.Msgs = make(chan *pack.PackageTCP, 1)
 	serv.Listen()
 }
 
@@ -62,7 +62,7 @@ func (serv *Server) Handle() {
 		select {
 		case conn := <-serv.TCPconns:
 			fmt.Println(conn.RemoteAddr().String())
-			go serv.ReciveConn(conn)
+			go serv.ReciveConn(&conn)
 
 		case msg := <-serv.Msgs:
 			go serv.RedirectPackages(msg)
